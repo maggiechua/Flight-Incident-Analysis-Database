@@ -1,7 +1,3 @@
-## CS3200: Final Project
-## Maggie Chua
-## Summer 2 2025
-
 # Appendix
 This sections includes a list of sources and references I used
 while working on this project that were not provided within 
