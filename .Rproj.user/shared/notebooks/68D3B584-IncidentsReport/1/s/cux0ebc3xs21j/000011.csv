@@ -1,0 +1,7 @@
+"0","# Run Script"
+"0","source(""configBusinessLogic.PractI.ChuaM.R"", local=knitr::knit_global())"
+"0",""
+"0","# Note: Stored Procedures compile, but do not pass tests"
+"0","# Run Tests and Display Results"
+"0","# test_sp_storeIncident()"
+"0","# test_sp_storeNewIncident()"

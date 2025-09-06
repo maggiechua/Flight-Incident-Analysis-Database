@@ -1,0 +1,163 @@
+## Part C: Realize Database
+## Maggie Chua
+## Summer 2 2025
+
+# Connecting to DB
+library(RMySQL)
+library(DBI)
+library(glue)
+
+## define settings
+db_host_aiven <- "db-design-final-project-mysql-dev-neu-cs3200-final-project-chua.h.aivencloud.com"
+db_port_aiven <- 26812
+db_name_aiven <- "defaultdb"
+db_user_aiven <- "avnadmin"
+db_pwd_aiven <- "AVNS_Wbk5xgGVEa4N9y6yafx"
+
+## embedded SSL certificate
+db_cert <- 
+"
+-----BEGIN CERTIFICATE-----
+MIIEUDCCArigAwIBAgIUON3XR4aM9HPJ87/MZCub20Q16b0wDQYJKoZIhvcNAQEM
+BQAwQDE+MDwGA1UEAww1ZTIxOTgzMDUtZDI5MS00OGZjLWE1YTYtZTdhMGYxYTg3
+OTI0IEdFTiAxIFByb2plY3QgQ0EwHhcNMjUwODEyMTgxNDM3WhcNMzUwODEwMTgx
+NDM3WjBAMT4wPAYDVQQDDDVlMjE5ODMwNS1kMjkxLTQ4ZmMtYTVhNi1lN2EwZjFh
+ODc5MjQgR0VOIDEgUHJvamVjdCBDQTCCAaIwDQYJKoZIhvcNAQEBBQADggGPADCC
+AYoCggGBAN0qsOd875cuXS929KsIZIcQ65xazlJL5ptzOCqG3Et2veCoxynka7/a
+NCLdg7J3RPvxXPhZkyWSjAOHUCRpiKtmh04lvNjgRN5XeYu+8buKrQTD/zo/COzw
+2AMerSiYADr2qbNNVgdjN+hJvcp4fNwghSQNjHcqU8Y2cBrBre9/E/3YAt8iWMQA
+q8AAI4NiGJzN7sUv0CVO1ylkw3SRIhk7ydALYD3eHrRNqoiA+qCDIWq9K016bZCI
+Nx+kxzOwDcHa0Scl5Hppy18dUa7BVCxecF/oxU81AtMOG28aQJzD1KtecnbqKC0G
+4DcvgYC9ONBJ+qdjlXrUF2GM+QEzkcVaggGCWJexmUGnIakp8w1YdGF5S2MpVF1w
+wsMM7pG3DkDaE8rf3ch+rRUoOhrNYqxzsYR7eRqXXYBMwzTk81BOx5LdDuPGe2D0
+ryfA1A5If5e3wig/7Biq927gU9bG01mW2qqV2vEZRiZEpgfuqjetRvR1FNjxuGAh
+uCsoncJNjQIDAQABo0IwQDAdBgNVHQ4EFgQUEErlkGNECzRybGAw6tbThLTwMFMw
+EgYDVR0TAQH/BAgwBgEB/wIBADALBgNVHQ8EBAMCAQYwDQYJKoZIhvcNAQEMBQAD
+ggGBAG6q2Gy3crJ5jd0itQ9B0Zh/6bdYlk8e8luQBVH7UficpWrsbDfpzJJ/U7ay
+XkX2+5+OGO4aILvqBEoOo4wJqHGLuUWSDeRaMTFAmK8wqWpdZ4HNXtazqVjwgs2u
+MKUefqy14cJw7inDyyM4YQDC/7SVPFH+LKkc2n+OYTtZhhOPS+HkQqsKWHUEkOae
+nEr0PxkB1zW/VUPDjK7IffyYOpAPupSwN1+usCJi+M0vwJ8UMOXpznbzjwBWmem3
+qQGMzqdYF3obWXiwBVmBCPgsrOJ5ol2mJW1p/Et0FOI+knMm5Z8AfGiIckp8jbe2
+67EZ0Qm1BY0tcU1FgC71+7QfM6elRJROcJ/j8QDug01PnXg6Z9G9WQHyy4Ka8bRI
+Mg6PyRANanshgEmGEWq5ZaqUcYJMQsIWNy0XeWklCuEA7Ht3vTFuxVe03IhgV/Ua
+JgAyUeApcGriBnUGFUj8UPcY58TephDfu4WJLnjSZR9f5MCKV855HOMS5iYYVfG4
+ZqBZlw==
+-----END CERTIFICATE-----
+"
+
+## connect securely to remote MySQL server and database
+dbcon <- dbConnect(RMySQL::MySQL(), 
+                        user = db_user_aiven, 
+                        password = db_pwd_aiven,
+                        dbname = db_name_aiven, 
+                        host = db_host_aiven, 
+                        port = db_port_aiven,
+                        sslmode = "require",
+                        sslcert = db_cert)
+
+# Realize DB
+## Create DB Tables
+dbExecute(dbcon, "
+CREATE TABLE IF NOT EXISTS Airline (
+  alId INTEGER NOT NULL AUTO_INCREMENT,
+  name varchar(2) NOT NULL,
+  PRIMARY KEY (alId)
+)
+")
+
+dbExecute(dbcon, "
+CREATE TABLE IF NOT EXISTS Aircraft (
+  acId INTEGER NOT NULL AUTO_INCREMENT,
+  name varchar(16) NOT NULL,
+  PRIMARY KEY (acId)
+)
+")
+
+dbExecute(dbcon, "
+CREATE TABLE IF NOT EXISTS Airport (
+  apId INTEGER NOT NULL AUTO_INCREMENT,
+  name varchar(3) NOT NULL,
+  PRIMARY KEY (apId)
+)
+")
+
+dbExecute(dbcon, "
+CREATE TABLE IF NOT EXISTS Reporter (
+  rId INTEGER NOT NULL AUTO_INCREMENT,
+  name varchar(16) NOT NULL,
+  PRIMARY KEY (rId)
+)
+")
+
+dbExecute(dbcon, "
+CREATE TABLE IF NOT EXISTS IncidentType (
+  itId INTEGER NOT NULL AUTO_INCREMENT,
+  name varchar(16) NOT NULL,
+  PRIMARY KEY (itId)
+)
+")
+
+dbExecute(dbcon, "
+CREATE TABLE IF NOT EXISTS Flight (
+  fId INTEGER NOT NULL AUTO_INCREMENT,
+  alId INTEGER NOT NULL,
+  acId INTEGER NOT NULL,
+  apId INTEGER NOT NULL,
+  flightNum INTEGER NOT NULL,
+  flightDate DATE NOT NULL,
+  delay INTEGER NOT NULL,
+  PRIMARY KEY (fId),
+  FOREIGN KEY (alId) REFERENCES Airline(alId),
+  FOREIGN KEY (acId) REFERENCES Aircraft(acId)
+)
+")
+
+dbExecute(dbcon, "
+CREATE TABLE IF NOT EXISTS Incident (
+  inId INTEGER NOT NULL AUTO_INCREMENT,
+  iid VARCHAR(16) NOT NULL,
+  fId INTEGER NOT NULL,
+  itId INTEGER NOT NULL,
+  rId INTEGER NOT NULL,
+  severity varchar(16) NOT NULL,
+    CHECK (severity IN ('minor', 'major', 'critical')),
+  injuries INTEGER NOT NULL,
+    CHECK (injuries IN (0, 1, NULL)),
+  PRIMARY KEY (inId),
+  FOREIGN KEY (fId) REFERENCES Flight(fId),
+  FOREIGN KEY (itId) REFERENCES IncidentType(itId),
+  FOREIGN KEY (rId) REFERENCES Reporter(rId)
+)
+")
+
+## Set auto-increments to ensure data integrity and prevent collisions
+dbExecute(dbcon, "
+  ALTER TABLE IncidentType AUTO_INCREMENT=100
+")
+
+dbExecute(dbcon, "
+  ALTER TABLE Airline AUTO_INCREMENT=200
+")
+
+dbExecute(dbcon, "
+  ALTER TABLE Reporter AUTO_INCREMENT=300
+")
+
+dbExecute(dbcon, "
+  ALTER TABLE Aircraft AUTO_INCREMENT=400
+")
+
+dbExecute(dbcon, "
+  ALTER TABLE Airport AUTO_INCREMENT=500
+")
+
+dbExecute(dbcon, "
+  ALTER TABLE Incident AUTO_INCREMENT=1000
+")
+
+dbExecute(dbcon, "
+  ALTER TABLE Flight AUTO_INCREMENT=50000
+")
+
+dbListTables(dbcon)
+

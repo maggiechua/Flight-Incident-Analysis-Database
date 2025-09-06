@@ -1,0 +1,12 @@
+"0","# Combine all files into one dataframe"
+"0","# query uses UNION ALL to append all data files together into one data frame"
+"0","df <- sqldf("""
+"0","  SELECT * FROM sales_jan2March_df"
+"0","  UNION ALL"
+"0","  SELECT * FROM sales_sept2Oct_df"
+"0","  UNION ALL"
+"0","  SELECT * FROM sales_nov2Dec_df"
+"0",""")"
+"2","Error in .local(drv, ...) : 
+  Failed to connect to database: Error: Can't connect to server on 'localhost' (10061)
+"

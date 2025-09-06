@@ -1,0 +1,8 @@
+"0","# Compare DB Data to Original CSV File"
+"0","source(""testDBLoading.PractI.ChuaM.R"", local=knitr::knit_global())"
+"0",""
+"0","# Run Tests and Display Results"
+"0","test_num_rows()"
+"0","test_dates_match()"
+"0","test_unq_values()"
+"0","test_avg_flight_delay()"

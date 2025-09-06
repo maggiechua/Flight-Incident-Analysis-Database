@@ -1,0 +1,16 @@
+"0","```r
+# load libraries
+library(RSQLite)
+library(DBI)
+
+# create db connection
+dbfile <- \"IncidentsDB.sqlite.db\"
+dbcon <- dbConnect(RSQLite::SQLite(), dbfile)
+
+# construct tables
+
+# populate db with tables
+
+# check that data populated correctly
+dbListTables(dbcon)
+```"

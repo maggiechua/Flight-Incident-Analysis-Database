@@ -1,0 +1,192 @@
+---
+title: "Analyze Incidents & Flights"
+subtitle: "CS3200 Final Project"
+author: "Maggie Chua"
+date: "08/14/2025"
+output: html_notebook
+---
+
+```{r loadLibraries, include=FALSE, eval=T, warning=F}
+library(kableExtra)
+library(knitr)
+```
+
+```{r createLoadDB, include=FALSE, eval=T, warning=F}
+# Create DB & Establish DB Connection
+source("createDB.PractI.ChuaM.R", local=knitr::knit_global())
+
+# Load CSV Data into DB
+source("loadDB.PractI.ChuaM.R", local=knitr::knit_global())
+```
+
+```{r testDBLoadAccuracy, include=FALSE, eval=T, warning=F}
+# Compare DB Data to Original CSV File
+source("testDBLoading.PractI.ChuaM.R", local=knitr::knit_global())
+
+# Run Tests and Display Results
+test_num_rows()
+test_dates_match()
+test_unq_values()
+test_avg_flight_delay()
+```
+
+```{r createTestStoredProcs, include=FALSE, eval=T, warning=F}
+# Run Script
+source("configBusinessLogic.PractI.ChuaM.R", local=knitr::knit_global())
+
+# Note: Stored Procedures compile, but do not pass tests
+# Run Tests and Display Results
+# test_sp_storeIncident()
+# test_sp_storeNewIncident()
+```
+
+
+## Analysis by Month
+```{sql incidentsPerTypeByMonthQuery, connection=dbcon, eval=T, warning=F, include=F, output.var="incidentsByMonthAndType"}
+-- Uses LEFT JOIN to preserve rows in original Incident table and groups by
+-- both incidentType id and month, providing information on incident count
+-- per month and per incident type
+SELECT 
+  MONTH(f.flightDate) AS month,
+  t.name AS name,
+  COUNT(t.itId) AS Incident_Count
+FROM Incident i
+LEFT JOIN Flight f ON f.fId = i.fId
+LEFT JOIN IncidentType t ON t.itId = i.itId
+GROUP BY t.itId, MONTH(f.flightDate)
+ORDER BY month
+```
+
+```{r reshapeReformatTable, include=F, eval=T, warning=F}
+# reshape the table, so that we can have months as one column and the other
+# columns as the incident count per month by incident type (4)
+reshapedTable <- reshape( 
+  data = incidentsByMonthAndType,
+  timevar = "name",
+  idvar = "month",
+  new.row.names = c("January", "February", "March", "April", "May", "June", 
+                    "July", "August", "September", "October", "November", 
+                    "December"),
+  direction = "wide"
+)
+
+# create a new dataframe and format the table for display
+formatted_incidentsTypeMonth <- data.frame(
+  month = month.abb[reshapedTable$month],
+  medical = reshapedTable$Incident_Count.medical,
+  weather = reshapedTable$Incident_Count.weather,
+  security = reshapedTable$Incident_Count.security,
+  faa = reshapedTable$Incident_Count.faa,
+  crew = reshapedTable$Incident_Count.crew,
+  mechanical = reshapedTable$Incident_Count.turbulence,
+  wildlife = reshapedTable$Incident_Count.wildlife,
+  tsa = reshapedTable$Incident_Count.TSA
+)
+
+# replace all NA values in the table with 0
+formatted_incidentsTypeMonth[is.na(formatted_incidentsTypeMonth)] <- 0
+formatted_incidentsTypeMonth
+```
+
+```{r incidentsByTypeMonthTable, echo=F, warning=F}
+incidentsTable <- kable(formatted_incidentsTypeMonth, format="html") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+incidentsTable
+```
+
+
+## Analysis By Airline
+```{sql incidentsAvgDelayByAirlineQuery, connection=dbcon, include=F, warning=F}
+-- Used LEFT JOIN to preserve original rows in the Incident table
+-- and grouped by airline id to determine number of incidents and average delay
+SELECT 
+  a.name AS Airline,
+  COUNT(i.inId) AS Num_Incidents,
+  ROUND(AVG(f.delay), 2) AS Avg_Delay_mins
+FROM Incident i
+LEFT JOIN Flight f
+  ON i.fId = f.fId
+LEFT JOIN Airline a
+  ON f.alId = a.alId
+GROUP BY a.alId
+ORDER BY a.alId
+```
+
+```{sql createViewForAirlinesAndDisplay, connection=dbcon, include=F, warning=F}
+CREATE OR REPLACE VIEW AirlineIncidentData AS
+SELECT
+  Airline,
+  Num_Incidents,
+  Avg_Delay_mins
+FROM (
+  SELECT 
+    a.name AS Airline,
+    COUNT(i.inId) AS Num_Incidents,
+    ROUND(AVG(f.delay), 2) AS Avg_Delay_mins
+  FROM Incident i
+  LEFT JOIN Flight f
+    ON i.fId = f.fId
+  LEFT JOIN Airline a
+    ON f.alId = a.alId
+  GROUP BY a.alId
+  ORDER BY a.alId
+) AS subquery
+```
+
+```{r displayAirlineDataTable, echo=F, warning=F}
+airlineData <- dbGetQuery(dbcon, "SELECT * FROM AirlineIncidentData")
+
+kable(airlineData, format="html") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+## Trend By Year
+```{sql incidentsByYearQuery, connection=dbcon, include=F, warning=F}
+SELECT 
+  YEAR(f.flightDate) AS Years,
+  COUNT(YEAR(f.flightDate)) AS Total_Incidents
+FROM Incident i
+LEFT JOIN Flight f ON f.fId = i.fId
+GROUP BY YEAR(f.flightDate)
+ORDER By Years ASC
+```
+
+```{sql incidentsByYearView, connection=dbcon, include=F, warning=F}
+CREATE OR REPLACE VIEW IncidentsByYearData AS
+SELECT 
+  YEAR(f.flightDate) AS Years,
+  COUNT(YEAR(f.flightDate)) AS Total_Incidents
+FROM Incident i
+LEFT JOIN Flight f ON f.fId = i.fId
+GROUP BY YEAR(f.flightDate)
+ORDER By Years ASC
+```
+
+
+```{r trendByYearPlot, echo=F, fig.width=7, fig.height=5, warning=F}
+incidentsByYear <- dbGetQuery(dbcon, "SELECT * FROM IncidentsByYearData")
+
+# set vectors to their corresponding axis and determine limits
+x <- incidentsByYear$Years
+y <- incidentsByYear$Total_Incidents
+
+lower_limit_x <- x[1]
+upper_limit_x <- x[length(x)]
+
+lower_limit_y <- min(y)
+upper_limit_y <- max(y)
+
+# plot scatterplot with titles and formatted labels
+fig <- plot(x, y, main="Incidents Trend By Year", 
+     xlab="Year", ylab="Number of Incidents",
+     xlim=c(lower_limit_x, upper_limit_x),
+     ylim=c(lower_limit_y, upper_limit_y))
+
+axis(side = 1, at = x, labels = x)
+axis(side = 1, at = y, labels = y)
+```
+
+```{r deleteDisconnectDB, include=FALSE, eval=T, warning=F}
+# Delete DB + Disconnect
+source("deleteDB.PractI.ChuaM.R")
+```
