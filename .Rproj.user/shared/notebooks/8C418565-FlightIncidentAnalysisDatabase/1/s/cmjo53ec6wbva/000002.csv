@@ -1,7 +1,0 @@
-"0","```r
-library(RMySQL)
-
-url <- \"https://s3.us-east-2.amazonaws.com/artificium.us/datasets/incidents-v2.csv\"
-csvData <- read.csv(url, header = TRUE, stringsAsFactors = TRUE)
-csvData
-```"

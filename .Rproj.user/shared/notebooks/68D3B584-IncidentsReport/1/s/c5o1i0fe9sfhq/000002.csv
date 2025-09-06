@@ -1,7 +1,0 @@
-"0","SELECT 
-  YEAR(f.flightDate) AS Years,
-  COUNT(YEAR(f.flightDate)) AS Total_Incidents
-FROM Incident i
-LEFT JOIN Flight f ON f.fId = i.fId
-GROUP BY YEAR(f.flightDate)
-ORDER By Years ASC"

@@ -1,4 +1,0 @@
-"0","airlineData <- dbGetQuery(dbcon, ""SELECT * FROM AirlineIncidentData"")"
-"0",""
-"0","kable(airlineData, format=""html"") %>%"
-"0","  kable_styling(bootstrap_options = c(""striped"", ""hover""))"
